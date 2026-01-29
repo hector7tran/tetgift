@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TET GIFTS 2026</title>
+    <title>SEHC TET 2026 GIFTS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -23,8 +23,8 @@
 
     <nav class="sticky top-0 z-50 glass-card px-4 py-3 flex justify-between items-center border-b">
         <div class="flex flex-col">
-            <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest">SEHC</span>
-            <span class="text-base font-black italic">TET GIFTS 2026</span>
+            <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest">Samsung SEHC</span>
+            <span class="text-base font-black italic text-gray-800">TET 2026 GIFTS</span>
         </div>
         <div id="sync-status" class="w-8 h-8 flex items-center justify-center rounded-full bg-green-50 text-green-600">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
@@ -38,13 +38,14 @@
             <button onclick="switchTab('truck')" id="t-truck" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 rounded-xl">Truck</button>
             <button onclick="switchTab('stats')" id="t-stats" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 rounded-xl">Thống kê</button>
         </div>
+
         <div id="main-content"></div>
     </div>
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbx67zq7nRinZ5XDf2lQmDZWzod0Zi5UX3v3wN241IoDOHtIjFHOSZcoU_SxD2TdwMld/exec";
         const STATIONS = ['1. Trạm DA1', '2. Trạm DA2 - DA3', '3. Trạm EPS - VD4', '4. Trạm VD1 – VD2', '5. Trạm VD2 – VD3', '6. Trạm Admin'];
-        const ITEMS = ['Bếp từ-Nồi lầu', 'Bộ nồi chảo', 'Máy massage', 'Nồi chiên', 'Nồi cơm điện', 'Set bánh kẹo'];
+        const ITEMS = ['BẾP TỪ', 'BỘ NỒI CHẢO', 'MÁY MASSAGE', 'NỒI CHIÊN', 'NỒI CƠM ĐIỆN', 'SET BÁNH KẸO'];
         const PACKAGING = [6, 2, 12, 1, 4, 1];
 
         let state = { currentTab: 'receive', selectedStation: '', searchTerm: '', departments: [], truck: [], expandedDepts: new Set(), drillDownStation: null };
@@ -87,6 +88,26 @@
             lucide.createIcons();
         }
 
+        // CORE LOGIC: Tính toán tiến độ bộ phận
+        function getDeptProgress(d) {
+            let doneTypes = 0;      // Số loại quà đã giao đủ
+            let regTypes = 0;       // Số loại quà đăng ký (Plan > 0)
+            let actualGifts = 0;    // Tổng số lượng quà đã nhận
+            let planGifts = 0;      // Tổng số lượng quà kế hoạch
+            
+            for (let i = 1; i <= 6; i++) {
+                let p = Number(d[`Item${i}_P`]) || 0;
+                let a = Number(d[`Item${i}_A`]) || 0;
+                if (p > 0) {
+                    regTypes++;
+                    planGifts += p;
+                    actualGifts += a;
+                    if (a >= p) doneTypes++;
+                }
+            }
+            return { doneTypes, regTypes, actualGifts, planGifts, isAllDone: regTypes > 0 && doneTypes === regTypes };
+        }
+
         function getPack(idx, total) {
             const size = PACKAGING[idx];
             return { boxes: Math.floor(total / size), rem: total % size };
@@ -103,7 +124,7 @@
                     ${state.selectedStation ? `
                         <div class="relative"><input type="text" placeholder="Tìm bộ phận..." oninput="state.searchTerm = this.value; renderReceiveList();" value="${state.searchTerm}" class="w-full p-4 pl-12 rounded-2xl border-none shadow-sm bg-white"><i data-lucide="search" class="absolute left-4 top-4 w-5 h-5 text-gray-400"></i></div>
                         <div id="receive-list" class="space-y-3"></div>
-                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Chọn trạm phát</div>'}
+                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Vui lòng chọn trạm phát</div>'}
                 </div>
             `;
             if (state.selectedStation) renderReceiveList();
@@ -112,14 +133,22 @@
         function renderReceiveList() {
             const list = document.getElementById('receive-list');
             let filtered = state.departments.filter(d => String(d.Station).trim() === state.selectedStation.trim() && d.Dept.toLowerCase().includes(state.searchTerm.toLowerCase()));
-            filtered.sort((a, b) => isDoneAll(a) === isDoneAll(b) ? 0 : isDoneAll(a) ? 1 : -1);
+            
+            filtered.sort((a, b) => {
+                const aProg = getDeptProgress(a);
+                const bProg = getDeptProgress(b);
+                return aProg.isAllDone === bProg.isAllDone ? 0 : aProg.isAllDone ? 1 : -1;
+            });
 
             list.innerHTML = filtered.map(dept => {
-                const isAll = isDoneAll(dept);
+                const prog = getDeptProgress(dept);
                 return `
-                    <details class="group rounded-3xl overflow-hidden transition-all ${isAll ? 'bg-green-50 ring-1 ring-green-200' : 'bg-white shadow-sm'}" ${state.expandedDepts.has(dept.Dept) ? 'open' : ''} ontoggle="toggleDept('${dept.Dept}', this.open)">
+                    <details class="group rounded-3xl overflow-hidden transition-all ${prog.isAllDone ? 'bg-green-50 ring-1 ring-green-200' : 'bg-white shadow-sm'}" ${state.expandedDepts.has(dept.Dept) ? 'open' : ''} ontoggle="toggleDept('${dept.Dept}', this.open)">
                         <summary class="p-4 flex justify-between items-center cursor-pointer">
-                            <div class="pr-2"><h4 class="font-extrabold text-sm ${isAll ? 'text-green-700' : 'text-gray-800'}">${dept.Dept}</h4><span class="text-[9px] uppercase font-bold text-gray-400">${getDoneCount(dept)} Items Xong</span></div>
+                            <div class="pr-2">
+                                <h4 class="font-extrabold text-sm ${prog.isAllDone ? 'text-green-700' : 'text-gray-800'}">${dept.Dept}</h4>
+                                <span class="text-[9px] uppercase font-bold text-gray-400">${prog.doneTypes}/${prog.regTypes} ITEMS XONG</span>
+                            </div>
                             <i data-lucide="chevron-down" class="w-5 h-5 text-gray-300 group-open:rotate-180 transition-transform"></i>
                         </summary>
                         <div class="px-4 pb-4 space-y-3 pt-2 border-t border-gray-50">
@@ -191,7 +220,7 @@
             container.innerHTML = `
                 <div class="bg-white rounded-[2rem] shadow-sm overflow-hidden">
                     <div class="overflow-x-auto"><table class="w-full text-left text-[10px]">
-                        <thead class="bg-gray-50 text-gray-400 font-bold uppercase tracking-tighter"><tr><th class="p-3">Trạm</th>${ITEMS.map(it => `<th class="p-3 text-center">${it.split('-')[0]}</th>`).join('')}</tr></thead>
+                        <thead class="bg-gray-50 text-gray-400 font-bold uppercase tracking-tighter"><tr><th class="p-3">Trạm</th>${ITEMS.map(it => `<th class="p-3 text-center">${it.split(' ')[0]}</th>`).join('')}</tr></thead>
                         <tbody>
                             ${STATIONS.map(st => `
                                 <tr class="border-t border-gray-50"><td class="p-3 font-extrabold text-gray-700 whitespace-nowrap">${st.split('. ')[1]}</td>
@@ -200,7 +229,7 @@
                                         let s = status?.Status || 0;
                                         let color = 'bg-gray-100 text-gray-300';
                                         let lbl = 'WAIT';
-                                        let timeStr = (status?.Time && status.Time.includes('T')) ? status.Time.split('T')[1].substring(0,5) : (status?.Time || '--:--');
+                                        let timeStr = (status?.Time && status.Time.includes(':')) ? status.Time : '--:--';
                                         if(s == 1) { color = 'bg-yellow-400 text-white'; lbl = `IN\n${timeStr}`; }
                                         if(s == 2) { color = 'bg-green-500 text-white'; lbl = `OUT\n${timeStr}`; }
                                         return `<td class="p-1 text-center"><button onclick="handleTruck('${st}', '${it}')" class="w-10 h-10 rounded-lg font-black flex flex-col items-center justify-center leading-none text-[8px] btn-3d mx-auto ${color}">${lbl.replace('\n', '<br>')}</button></td>`;
@@ -221,16 +250,21 @@
                     <div class="bg-red-600 p-5 rounded-[2rem] shadow-xl text-center text-white"><p class="text-[9px] font-bold text-red-100 uppercase">Đã phát</p><h2 class="text-2xl font-black">${totalA}</h2></div>
                 </div>
                 <div class="bg-white rounded-[2rem] p-6 shadow-sm space-y-4">
-                    <h3 class="font-extrabold text-gray-800">Tiến độ Trạm</h3>
+                    <h3 class="font-extrabold text-gray-800 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-5 h-5 text-red-500"></i> Tiến độ Trạm</h3>
                     ${STATIONS.map(st => {
                         const depts = state.departments.filter(d => String(d.Station).trim() === st.trim());
-                        const done = depts.filter(isDoneAll).length;
-                        const pct = depts.length ? Math.round((done/depts.length)*100) : 0;
+                        const doneCount = depts.filter(d => getDeptProgress(d).isAllDone).length;
+                        const pct = depts.length ? Math.round((doneCount/depts.length)*100) : 0;
                         return `
                             <div class="space-y-2">
-                                <button onclick="toggleDrillDown('${st}')" class="w-full flex justify-between items-center"><span class="text-xs font-bold text-gray-600">${st}</span><span class="text-[10px] font-black ${pct === 100 ? 'text-green-600' : 'text-red-500'}">${done}/${depts.length} BP</span></button>
+                                <button onclick="toggleDrillDown('${st}')" class="w-full flex justify-between items-center"><span class="text-xs font-bold text-gray-600">${st}</span><span class="text-[10px] font-black ${pct === 100 ? 'text-green-600' : 'text-red-500'}">${doneCount}/${depts.length} BP XONG</span></button>
                                 <div class="w-full h-1 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-red-500 transition-all duration-700" style="width: ${pct}%"></div></div>
-                                ${state.drillDownStation === st ? `<div class="bg-gray-50 rounded-xl p-2 mt-2 grid gap-1">${depts.map(d => `<div class="flex justify-between text-[9px] font-bold p-2 bg-white rounded-lg"><span class="${isDoneAll(d) ? 'text-green-600' : 'text-gray-500'}">${d.Dept}</span><span>${getDoneCount(d)}/6</span></div>`).join('')}</div>` : ''}
+                                ${state.drillDownStation === st ? `<div class="bg-gray-50 rounded-xl p-2 mt-2 grid gap-1">
+                                    ${depts.map(d => {
+                                        const prog = getDeptProgress(d);
+                                        return `<div class="flex justify-between text-[9px] font-bold p-2 bg-white rounded-lg"><span class="${prog.isAllDone ? 'text-green-600' : 'text-gray-500'}">${d.Dept}</span><span>${prog.actualGifts}/${prog.planGifts} QUÀ</span></div>`;
+                                    }).join('')}
+                                </div>` : ''}
                             </div>`;
                     }).join('')}
                 </div>
@@ -239,27 +273,6 @@
 
         function toggleDept(name, isOpen) { if(isOpen) state.expandedDepts.add(name); else state.expandedDepts.delete(name); }
         function toggleDrillDown(st) { state.drillDownStation = (state.drillDownStation === st) ? null : st; render(); }
-
-        // LOGIC SỬA LỖI 4/6: Chỉ đếm những món có Plan > 0 và đã giao đủ
-        function isDoneAll(d) {
-            let needed = 0, got = 0;
-            for(let i=1; i<=6; i++) {
-                let p = Number(d[`Item${i}_P`]) || 0;
-                let a = Number(d[`Item${i}_A`]) || 0;
-                if(p > 0) { needed++; if(a >= p) got++; }
-            }
-            return needed > 0 ? got === needed : true;
-        }
-
-        function getDoneCount(d) {
-            let got = 0;
-            for(let i=1; i<=6; i++) {
-                let p = Number(d[`Item${i}_P`]) || 0;
-                let a = Number(d[`Item${i}_A`]) || 0;
-                if(p > 0 && a >= p) got++;
-            }
-            return got;
-        }
 
         async function confirmGift(deptName, idx, val) {
             const dept = state.departments.find(d => d.Dept === deptName);
