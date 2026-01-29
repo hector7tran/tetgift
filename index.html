@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SEHC Tet Gifts 2026</title>
+    <title>SEHC TET GIFTS 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -17,6 +17,8 @@
         .pack-badge { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); color: #475569; }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
+        /* Fix hiển thị cho iOS */
+        input, select { font-size: 16px !important; }
     </style>
 </head>
 <body class="pb-24">
@@ -46,8 +48,6 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbx67zq7nRinZ5XDf2lQmDZWzod0Zi5UX3v3wN241IoDOHtIjFHOSZcoU_SxD2TdwMld/exec";
         const STATIONS = ['1. Trạm DA1', '2. Trạm DA2 - DA3', '3. Trạm EPS - VD4', '4. Trạm VD1 – VD2', '5. Trạm VD2 – VD3', '6. Trạm Admin'];
         const ITEMS = ['Bếp từ-Nồi lầu', 'Bộ nồi chảo', 'Máy massage', 'Nồi chiên', 'Nồi cơm điện', 'Set bánh kẹo'];
-        
-        // Quy cách đóng gói: Items per Box
         const PACKAGING = [6, 2, 12, 1, 4, 1];
 
         let state = {
@@ -107,7 +107,6 @@
             lucide.createIcons();
         }
 
-        // Helper tính quy cách
         function getPack(idx, total) {
             const size = PACKAGING[idx];
             const boxes = Math.floor(total / size);
@@ -130,7 +129,7 @@
                             <i data-lucide="search" class="absolute left-4 top-4 w-5 h-5 text-gray-400"></i>
                         </div>
                         <div id="receive-list" class="space-y-3"></div>
-                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Vui lòng chọn trạm phát để bắt đầu</div>'}
+                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Vui lòng chọn trạm phát</div>'}
                 </div>
             `;
             if (state.selectedStation) renderReceiveList();
@@ -143,11 +142,7 @@
                 d.Dept.toLowerCase().includes(state.searchTerm.toLowerCase())
             );
 
-            filtered.sort((a, b) => {
-                const aDone = isDoneAll(a);
-                const bDone = isDoneAll(b);
-                return aDone === bDone ? 0 : aDone ? 1 : -1;
-            });
+            filtered.sort((a, b) => isDoneAll(a) === isDoneAll(b) ? 0 : isDoneAll(a) ? 1 : -1);
 
             list.innerHTML = filtered.map(dept => {
                 const isAll = isDoneAll(dept);
@@ -158,7 +153,7 @@
                         <summary class="p-4 flex justify-between items-center cursor-pointer">
                             <div class="pr-2">
                                 <h4 class="font-extrabold text-sm ${isAll ? 'text-green-700' : 'text-gray-800'} line-clamp-1">${dept.Dept}</h4>
-                                <span class="text-[9px] uppercase font-bold text-gray-400">${getDoneCount(dept)}/6 Items Đã xong</span>
+                                <span class="text-[9px] uppercase font-bold text-gray-400">${getDoneCount(dept)}/6 Items Xong</span>
                             </div>
                             <i data-lucide="chevron-down" class="w-5 h-5 text-gray-300 group-open:rotate-180 transition-transform"></i>
                         </summary>
@@ -168,7 +163,7 @@
                                     <p class="text-[9px] text-gray-400 font-bold uppercase">Người nhận</p>
                                     <p class="text-xs font-bold">${dept.Contact || '---'}</p>
                                 </div>
-                                <a href="tel:${dept.Phone}" class="w-9 h-9 flex items-center justify-center bg-blue-500 text-white rounded-full shadow-lg shadow-blue-100 btn-3d">
+                                <a href="tel:${dept.Phone}" class="w-9 h-9 flex items-center justify-center bg-blue-500 text-white rounded-full shadow-lg btn-3d">
                                     <i data-lucide="phone" class="w-4 h-4"></i>
                                 </a>
                             </div>
@@ -187,7 +182,6 @@
             const actual = Number(dept[`Item${i+1}_A`]) || 0;
             const isFinished = actual >= plan && plan > 0;
             if (plan === 0) return ''; 
-
             const pk = getPack(i, plan);
 
             return `
@@ -203,14 +197,14 @@
                         </div>
                         ${isFinished ? 
                             `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>` : 
-                            `<button onclick="confirmGift('${dept.Dept}', ${i}, ${plan})" class="bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-lg shadow-md btn-3d">GIAO ĐỦ</button>`
+                            `<button onclick="confirmGift('${dept.Dept}', ${i}, ${plan})" class="bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-lg btn-3d">GIAO ĐỦ</button>`
                         }
                     </div>
                 </div>
             `;
         }
 
-        // --- TAB 2: TỔNG QUÀ (NEW) ---
+        // --- TAB 2: TỔNG QUÀ ---
         function renderTotal(container) {
             container.innerHTML = `
                 <div class="space-y-4">
@@ -218,11 +212,10 @@
                         <option value="">-- Chọn Trạm --</option>
                         ${STATIONS.map(s => `<option value="${s}" ${state.selectedStation === s ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
-                    
                     ${state.selectedStation ? `
                         <div class="bg-white rounded-[2rem] p-5 shadow-sm ring-1 ring-gray-100 space-y-4">
                             <h3 class="font-extrabold text-gray-800 flex items-center gap-2">
-                                <i data-lucide="package-check" class="w-5 h-5 text-red-500"></i> Tổng hàng trạm phát
+                                <i data-lucide="package-check" class="w-5 h-5 text-red-500"></i> Tổng hàng trạm
                             </h3>
                             <div class="grid gap-3">
                                 ${ITEMS.map((name, i) => {
@@ -230,7 +223,6 @@
                                     const totalP = stDepts.reduce((acc, d) => acc + (Number(d[`Item${i+1}_P`]) || 0), 0);
                                     const totalA = stDepts.reduce((acc, d) => acc + (Number(d[`Item${i+1}_A`]) || 0), 0);
                                     const pk = getPack(i, totalP);
-                                    
                                     return `
                                         <div class="p-4 rounded-2xl bg-slate-50 ring-1 ring-gray-100">
                                             <div class="flex justify-between items-center mb-2">
@@ -252,7 +244,7 @@
                                 }).join('')}
                             </div>
                         </div>
-                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Chọn trạm để xem tổng quy cách</div>'}
+                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Chọn trạm để xem tổng hàng</div>'}
                 </div>
             `;
         }
@@ -275,8 +267,9 @@
                                             let s = status?.Status || 0;
                                             let color = 'bg-gray-100 text-gray-300';
                                             let lbl = 'WAIT';
-                                            if(s == 1) { color = 'bg-yellow-400 text-white shadow-lg shadow-yellow-100'; lbl = `IN\n${status.Time}`; }
-                                            if(s == 2) { color = 'bg-green-500 text-white shadow-lg shadow-green-100'; lbl = `OUT\n${status.Time}`; }
+                                            let timeStr = status?.Time || '--:--';
+                                            if(s == 1) { color = 'bg-yellow-400 text-white shadow-lg'; lbl = `IN\n${timeStr}`; }
+                                            if(s == 2) { color = 'bg-green-500 text-white shadow-lg'; lbl = `OUT\n${timeStr}`; }
                                             return `
                                                 <td class="p-1 text-center">
                                                     <button onclick="handleTruck('${st}', '${it}')" class="w-10 h-10 rounded-lg font-black flex flex-col items-center justify-center leading-none text-[8px] btn-3d mx-auto ${color}">
@@ -306,13 +299,13 @@
 
             container.innerHTML = `
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-white p-5 rounded-[2rem] shadow-sm ring-1 ring-gray-100 text-center">
+                    <div class="bg-white p-5 rounded-[2rem] shadow-sm ring-1 ring-gray-100 text-center overflow-hidden">
                         <p class="text-[9px] font-bold text-gray-400 uppercase">Tổng Plan</p>
-                        <h2 class="text-2xl font-black">${totalP}</h2>
+                        <h2 class="text-2xl font-black truncate">${totalP}</h2>
                     </div>
-                    <div class="bg-red-600 p-5 rounded-[2rem] shadow-xl text-center text-white">
+                    <div class="bg-red-600 p-5 rounded-[2rem] shadow-xl text-center text-white overflow-hidden">
                         <p class="text-[9px] font-bold text-red-100 uppercase">Đã phát</p>
-                        <h2 class="text-2xl font-black">${totalA}</h2>
+                        <h2 class="text-2xl font-black truncate">${totalA}</h2>
                     </div>
                 </div>
                 <div class="bg-white rounded-[2rem] p-6 shadow-sm ring-1 ring-gray-100 space-y-4">
@@ -348,7 +341,7 @@
             `;
         }
 
-        // Logic Helpers
+        // Helpers
         function toggleDept(name, isOpen) {
             if(isOpen) state.expandedDepts.add(name);
             else state.expandedDepts.delete(name);
@@ -361,9 +354,7 @@
 
         function isDoneAll(d) {
             for(let i=1; i<=6; i++) {
-                let p = Number(d[`Item${i}_P`]) || 0;
-                let a = Number(d[`Item${i}_A`]) || 0;
-                if(p > 0 && a < p) return false;
+                if((Number(d[`Item${i}_P`]) || 0) > 0 && (Number(d[`Item${i}_A`]) || 0) < (Number(d[`Item${i}_P`]) || 0)) return false;
             }
             return true;
         }
@@ -371,22 +362,37 @@
         function getDoneCount(d) {
             let c = 0;
             for(let i=1; i<=6; i++) {
-                let p = Number(d[`Item${i}_P`]) || 0;
-                let a = Number(d[`Item${i}_A`]) || 0;
-                if(p > 0 && a >= p) c++;
-                if(p === 0) c++; 
+                if((Number(d[`Item${i}_P`]) || 0) > 0 && (Number(d[`Item${i}_A`]) || 0) >= (Number(d[`Item${i}_P`]) || 0)) c++;
+                if((Number(d[`Item${i}_P`]) || 0) === 0) c++; 
             }
             return c;
         }
 
         async function confirmGift(deptName, idx, val) {
+            const dept = state.departments.find(d => d.Dept === deptName);
+            const itemName = ITEMS[idx];
+            const contactName = dept.Contact || 'Chưa rõ';
+
             const res = await Swal.fire({
-                title: 'Giao đủ?', text: `Xác nhận giao đủ món này?`,
-                icon: 'question', showCancelButton: true, confirmButtonColor: '#e11d48', confirmButtonText: 'Đã giao'
+                title: 'Xác nhận giao đủ?',
+                html: `
+                    <div class="text-left text-sm space-y-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
+                        <div class="flex justify-between border-b pb-1"><span class="text-slate-400 font-semibold">BỘ PHẬN:</span> <span class="font-bold text-slate-800">${deptName}</span></div>
+                        <div class="flex justify-between border-b pb-1"><span class="text-slate-400 font-semibold">NGƯỜI NHẬN:</span> <span class="font-bold text-slate-800">${contactName}</span></div>
+                        <div class="flex justify-between border-b pb-1"><span class="text-slate-400 font-semibold">MÓN QUÀ:</span> <span class="font-bold text-red-600">${itemName}</span></div>
+                        <div class="flex justify-between pt-1"><span class="text-slate-400 font-semibold">SỐ LƯỢNG:</span> <span class="font-black text-lg text-slate-900">${val} cái</span></div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                confirmButtonText: 'Đã giao xong',
+                cancelButtonText: 'Hủy'
             });
+            
             if (!res.isConfirmed) return;
 
-            const dept = state.departments.find(d => d.Dept === deptName);
+            // Optimistic Update
             dept[`Item${idx+1}_A`] = val;
             render();
 
@@ -398,24 +404,20 @@
 
         async function handleTruck(st, it) {
             const cur = state.truck.find(t => t.Station === st && t.Item === it);
-            let nextS = 0;
-            if(!cur || cur.Status == 0) nextS = 1;
-            else if(cur.Status == 1) nextS = 2;
-            else return;
+            let nextS = (!cur || cur.Status == 0) ? 1 : (cur.Status == 1 ? 2 : 0);
+            
+            if(nextS === 0 && cur.Status == 2) return; // Khóa không cho reset nếu đã OUT
 
-            // if(nextS === 1) {
-            //     const other = state.truck.find(t => t.Item === it && t.Status == 1);
-            //     if(other) return Swal.fire('Lỗi', `Quà này đang ở ${other.Station}`, 'error');
-            // }
-
-            const time = new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
-            if(!cur) state.truck.push({ Station: st, Item: it, Status: nextS, Time: time });
-            else { cur.Status = nextS; cur.Time = time; }
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            if(!cur) state.truck.push({ Station: st, Item: it, Status: nextS, Time: timeStr });
+            else { cur.Status = nextS; cur.Time = timeStr; }
             render();
 
             fetch(API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'UPDATE_TRUCK', data: { station: st, item: it, status: nextS, time: time } })
+                body: JSON.stringify({ action: 'UPDATE_TRUCK', data: { station: st, item: it, status: nextS, time: timeStr } })
             });
         }
     </script>
