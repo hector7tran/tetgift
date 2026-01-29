@@ -403,10 +403,10 @@
             else if(cur.Status == 1) nextS = 2;
             else return;
 
-            if(nextS === 1) {
-                const other = state.truck.find(t => t.Item === it && t.Status == 1);
-                if(other) return Swal.fire('Lỗi', `Quà này đang ở ${other.Station}`, 'error');
-            }
+            // if(nextS === 1) {
+            //     const other = state.truck.find(t => t.Item === it && t.Status == 1);
+            //     if(other) return Swal.fire('Lỗi', `Quà này đang ở ${other.Station}`, 'error');
+            // }
 
             const time = new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
             if(!cur) state.truck.push({ Station: st, Item: it, Status: nextS, Time: time });
