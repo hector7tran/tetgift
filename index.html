@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SEHC TET GIFTS 2026</title>
+    <title>TET GIFTS 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -17,8 +17,6 @@
         .pack-badge { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); color: #475569; }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
-        /* Fix hiển thị cho iOS */
-        input, select { font-size: 16px !important; }
     </style>
 </head>
 <body class="pb-24">
@@ -35,12 +33,11 @@
 
     <div class="max-w-md mx-auto p-3 space-y-4">
         <div class="flex bg-white rounded-2xl p-1 shadow-sm ring-1 ring-gray-100 overflow-x-auto no-scrollbar">
-            <button onclick="switchTab('receive')" id="t-receive" class="flex-none px-4 py-3 text-xs font-bold transition-all rounded-xl tab-active">Nhận quà</button>
-            <button onclick="switchTab('total')" id="t-total" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 transition-all rounded-xl">Tổng quà</button>
-            <button onclick="switchTab('truck')" id="t-truck" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 transition-all rounded-xl">Truck</button>
-            <button onclick="switchTab('stats')" id="t-stats" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 transition-all rounded-xl">Thống kê</button>
+            <button onclick="switchTab('receive')" id="t-receive" class="flex-none px-4 py-3 text-xs font-bold rounded-xl tab-active">Nhận quà</button>
+            <button onclick="switchTab('total')" id="t-total" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 rounded-xl">Tổng quà</button>
+            <button onclick="switchTab('truck')" id="t-truck" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 rounded-xl">Truck</button>
+            <button onclick="switchTab('stats')" id="t-stats" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 rounded-xl">Thống kê</button>
         </div>
-
         <div id="main-content"></div>
     </div>
 
@@ -50,30 +47,13 @@
         const ITEMS = ['Bếp từ-Nồi lầu', 'Bộ nồi chảo', 'Máy massage', 'Nồi chiên', 'Nồi cơm điện', 'Set bánh kẹo'];
         const PACKAGING = [6, 2, 12, 1, 4, 1];
 
-        let state = {
-            currentTab: 'receive',
-            selectedStation: '',
-            searchTerm: '',
-            departments: [],
-            truck: [],
-            expandedDepts: new Set(),
-            drillDownStation: null
-        };
+        let state = { currentTab: 'receive', selectedStation: '', searchTerm: '', departments: [], truck: [], expandedDepts: new Set(), drillDownStation: null };
 
-        window.onload = async () => {
-            loadCache();
-            await fetchData();
-            lucide.createIcons();
-        };
+        window.onload = async () => { loadCache(); await fetchData(); lucide.createIcons(); };
 
         function loadCache() {
             const cache = localStorage.getItem('sehc_data');
-            if (cache) {
-                const d = JSON.parse(cache);
-                state.departments = d.departments;
-                state.truck = d.truck;
-                render();
-            }
+            if (cache) { const d = JSON.parse(cache); state.departments = d.departments; state.truck = d.truck; render(); }
         }
 
         async function fetchData() {
@@ -109,27 +89,21 @@
 
         function getPack(idx, total) {
             const size = PACKAGING[idx];
-            const boxes = Math.floor(total / size);
-            const rem = total % size;
-            return { boxes, rem };
+            return { boxes: Math.floor(total / size), rem: total % size };
         }
 
         // --- TAB 1: NHẬN QUÀ ---
         function renderReceive(container) {
             container.innerHTML = `
                 <div class="space-y-4">
-                    <select onchange="state.selectedStation = this.value; render();" class="w-full p-4 rounded-2xl glass-card font-bold border-none ring-1 ring-gray-100 shadow-sm focus:ring-red-500 bg-white">
+                    <select onchange="state.selectedStation = this.value; render();" class="w-full p-4 rounded-2xl glass-card font-bold border-none bg-white">
                         <option value="">-- Chọn Trạm --</option>
                         ${STATIONS.map(s => `<option value="${s}" ${state.selectedStation === s ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
                     ${state.selectedStation ? `
-                        <div class="relative">
-                            <input type="text" placeholder="Tìm bộ phận..." oninput="state.searchTerm = this.value; renderReceiveList();" value="${state.searchTerm}"
-                                class="w-full p-4 pl-12 rounded-2xl border-none ring-1 ring-gray-100 shadow-sm bg-white">
-                            <i data-lucide="search" class="absolute left-4 top-4 w-5 h-5 text-gray-400"></i>
-                        </div>
+                        <div class="relative"><input type="text" placeholder="Tìm bộ phận..." oninput="state.searchTerm = this.value; renderReceiveList();" value="${state.searchTerm}" class="w-full p-4 pl-12 rounded-2xl border-none shadow-sm bg-white"><i data-lucide="search" class="absolute left-4 top-4 w-5 h-5 text-gray-400"></i></div>
                         <div id="receive-list" class="space-y-3"></div>
-                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Vui lòng chọn trạm phát</div>'}
+                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Chọn trạm phát</div>'}
                 </div>
             `;
             if (state.selectedStation) renderReceiveList();
@@ -137,39 +111,23 @@
 
         function renderReceiveList() {
             const list = document.getElementById('receive-list');
-            let filtered = state.departments.filter(d => 
-                String(d.Station).trim() === state.selectedStation.trim() && 
-                d.Dept.toLowerCase().includes(state.searchTerm.toLowerCase())
-            );
-
+            let filtered = state.departments.filter(d => String(d.Station).trim() === state.selectedStation.trim() && d.Dept.toLowerCase().includes(state.searchTerm.toLowerCase()));
             filtered.sort((a, b) => isDoneAll(a) === isDoneAll(b) ? 0 : isDoneAll(a) ? 1 : -1);
 
             list.innerHTML = filtered.map(dept => {
                 const isAll = isDoneAll(dept);
                 return `
-                    <details class="group rounded-3xl overflow-hidden transition-all ${isAll ? 'bg-green-50 ring-1 ring-green-200' : 'bg-white ring-1 ring-gray-100 shadow-sm'}" 
-                             ${state.expandedDepts.has(dept.Dept) ? 'open' : ''}
-                             ontoggle="toggleDept('${dept.Dept}', this.open)">
+                    <details class="group rounded-3xl overflow-hidden transition-all ${isAll ? 'bg-green-50 ring-1 ring-green-200' : 'bg-white shadow-sm'}" ${state.expandedDepts.has(dept.Dept) ? 'open' : ''} ontoggle="toggleDept('${dept.Dept}', this.open)">
                         <summary class="p-4 flex justify-between items-center cursor-pointer">
-                            <div class="pr-2">
-                                <h4 class="font-extrabold text-sm ${isAll ? 'text-green-700' : 'text-gray-800'} line-clamp-1">${dept.Dept}</h4>
-                                <span class="text-[9px] uppercase font-bold text-gray-400">${getDoneCount(dept)}/6 Items Xong</span>
-                            </div>
+                            <div class="pr-2"><h4 class="font-extrabold text-sm ${isAll ? 'text-green-700' : 'text-gray-800'}">${dept.Dept}</h4><span class="text-[9px] uppercase font-bold text-gray-400">${getDoneCount(dept)} Items Xong</span></div>
                             <i data-lucide="chevron-down" class="w-5 h-5 text-gray-300 group-open:rotate-180 transition-transform"></i>
                         </summary>
                         <div class="px-4 pb-4 space-y-3 pt-2 border-t border-gray-50">
                             <div class="flex justify-between items-center bg-gray-50 p-3 rounded-2xl">
-                                <div>
-                                    <p class="text-[9px] text-gray-400 font-bold uppercase">Người nhận</p>
-                                    <p class="text-xs font-bold">${dept.Contact || '---'}</p>
-                                </div>
-                                <a href="tel:${dept.Phone}" class="w-9 h-9 flex items-center justify-center bg-blue-500 text-white rounded-full shadow-lg btn-3d">
-                                    <i data-lucide="phone" class="w-4 h-4"></i>
-                                </a>
+                                <div><p class="text-[9px] text-gray-400 font-bold uppercase">Người nhận</p><p class="text-xs font-bold">${dept.Contact || '---'}</p></div>
+                                <a href="tel:${dept.Phone}" class="w-9 h-9 flex items-center justify-center bg-blue-500 text-white rounded-full btn-3d"><i data-lucide="phone" class="w-4 h-4"></i></a>
                             </div>
-                            <div class="grid gap-2">
-                                ${ITEMS.map((name, i) => renderItemRow(dept, name, i)).join('')}
-                            </div>
+                            <div class="grid gap-2">${ITEMS.map((name, i) => renderItemRow(dept, name, i)).join('')}</div>
                         </div>
                     </details>
                 `;
@@ -178,27 +136,17 @@
         }
 
         function renderItemRow(dept, name, i) {
-            const plan = Number(dept[`Item${i+1}_P`]) || 0;
-            const actual = Number(dept[`Item${i+1}_A`]) || 0;
-            const isFinished = actual >= plan && plan > 0;
-            if (plan === 0) return ''; 
-            const pk = getPack(i, plan);
-
+            const p = Number(dept[`Item${i+1}_P`]) || 0;
+            const a = Number(dept[`Item${i+1}_A`]) || 0;
+            if (p === 0) return ''; 
+            const isF = a >= p;
+            const pk = getPack(i, p);
             return `
-                <div class="p-3 rounded-2xl transition-all ${isFinished ? 'bg-green-100/50' : 'bg-white ring-1 ring-gray-50'}">
-                    <div class="flex justify-between items-start mb-1">
-                        <span class="text-xs font-bold ${isFinished ? 'text-green-700' : 'text-gray-600'}">${name}</span>
-                        <span class="text-xs font-black">${actual}/${plan}</span>
-                    </div>
+                <div class="p-3 rounded-2xl ${isF ? 'bg-green-100/50' : 'bg-white ring-1 ring-gray-50'}">
+                    <div class="flex justify-between items-start mb-1"><span class="text-xs font-bold ${isF ? 'text-green-700' : 'text-gray-600'}">${name}</span><span class="text-xs font-black">${a}/${p}</span></div>
                     <div class="flex justify-between items-center">
-                        <div class="flex gap-1">
-                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full pack-badge">${pk.boxes} Thùng</span>
-                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full pack-badge">${pk.rem} Lẻ</span>
-                        </div>
-                        ${isFinished ? 
-                            `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>` : 
-                            `<button onclick="confirmGift('${dept.Dept}', ${i}, ${plan})" class="bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-lg btn-3d">GIAO ĐỦ</button>`
-                        }
+                        <div class="flex gap-1"><span class="text-[9px] font-bold px-2 py-0.5 rounded-full pack-badge">${pk.boxes} Thùng</span><span class="text-[9px] font-bold px-2 py-0.5 rounded-full pack-badge">${pk.rem} Lẻ</span></div>
+                        ${isF ? `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>` : `<button onclick="confirmGift('${dept.Dept}', ${i}, ${p})" class="bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-lg btn-3d">GIAO ĐỦ</button>`}
                     </div>
                 </div>
             `;
@@ -208,15 +156,13 @@
         function renderTotal(container) {
             container.innerHTML = `
                 <div class="space-y-4">
-                    <select onchange="state.selectedStation = this.value; render();" class="w-full p-4 rounded-2xl glass-card font-bold border-none ring-1 ring-gray-100 shadow-sm bg-white">
+                    <select onchange="state.selectedStation = this.value; render();" class="w-full p-4 rounded-2xl glass-card font-bold border-none bg-white">
                         <option value="">-- Chọn Trạm --</option>
                         ${STATIONS.map(s => `<option value="${s}" ${state.selectedStation === s ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
                     ${state.selectedStation ? `
-                        <div class="bg-white rounded-[2rem] p-5 shadow-sm ring-1 ring-gray-100 space-y-4">
-                            <h3 class="font-extrabold text-gray-800 flex items-center gap-2">
-                                <i data-lucide="package-check" class="w-5 h-5 text-red-500"></i> Tổng hàng trạm
-                            </h3>
+                        <div class="bg-white rounded-[2rem] p-5 shadow-sm space-y-4">
+                            <h3 class="font-extrabold text-gray-800 flex items-center gap-2"><i data-lucide="package-check" class="w-5 h-5 text-red-500"></i> Tổng hàng trạm</h3>
                             <div class="grid gap-3">
                                 ${ITEMS.map((name, i) => {
                                     const stDepts = state.departments.filter(d => String(d.Station).trim() === state.selectedStation.trim());
@@ -225,26 +171,17 @@
                                     const pk = getPack(i, totalP);
                                     return `
                                         <div class="p-4 rounded-2xl bg-slate-50 ring-1 ring-gray-100">
-                                            <div class="flex justify-between items-center mb-2">
-                                                <span class="text-sm font-black text-gray-700">${name}</span>
-                                                <span class="text-sm font-black text-red-600">${totalA}/${totalP}</span>
-                                            </div>
+                                            <div class="flex justify-between items-center mb-2"><span class="text-sm font-black text-gray-700">${name}</span><span class="text-sm font-black text-red-600">${totalA}/${totalP}</span></div>
                                             <div class="flex gap-4">
-                                                <div class="flex-1 bg-white p-2 rounded-xl text-center shadow-inner">
-                                                    <p class="text-[9px] font-bold text-gray-400 uppercase">Số thùng</p>
-                                                    <p class="text-lg font-black text-gray-800">${pk.boxes}</p>
-                                                </div>
-                                                <div class="flex-1 bg-white p-2 rounded-xl text-center shadow-inner">
-                                                    <p class="text-[9px] font-bold text-gray-400 uppercase">Hàng lẻ</p>
-                                                    <p class="text-lg font-black text-gray-800">${pk.rem}</p>
-                                                </div>
+                                                <div class="flex-1 bg-white p-2 rounded-xl text-center"><p class="text-[9px] font-bold text-gray-400 uppercase">Thùng</p><p class="text-lg font-black">${pk.boxes}</p></div>
+                                                <div class="flex-1 bg-white p-2 rounded-xl text-center"><p class="text-[9px] font-bold text-gray-400 uppercase">Lẻ</p><p class="text-lg font-black">${pk.rem}</p></div>
                                             </div>
                                         </div>
                                     `;
                                 }).join('')}
                             </div>
                         </div>
-                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Chọn trạm để xem tổng hàng</div>'}
+                    ` : ''}
                 </div>
             `;
         }
@@ -252,37 +189,24 @@
         // --- TAB 3: TRUCK STATUS ---
         function renderTruck(container) {
             container.innerHTML = `
-                <div class="bg-white rounded-[2rem] shadow-sm ring-1 ring-gray-100 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-[10px]">
-                            <thead class="bg-gray-50 text-gray-400 font-bold uppercase tracking-tighter">
-                                <tr><th class="p-3">Trạm</th>${ITEMS.map(it => `<th class="p-3 text-center">${it.split('-')[0]}</th>`).join('')}</tr>
-                            </thead>
-                            <tbody>
-                                ${STATIONS.map(st => `
-                                    <tr class="border-t border-gray-50">
-                                        <td class="p-3 font-extrabold text-gray-700 whitespace-nowrap">${st.split('. ')[1]}</td>
-                                        ${ITEMS.map(it => {
-                                            const status = state.truck.find(t => t.Station === st && t.Item === it);
-                                            let s = status?.Status || 0;
-                                            let color = 'bg-gray-100 text-gray-300';
-                                            let lbl = 'WAIT';
-                                            let timeStr = status?.Time || '--:--';
-                                            if(s == 1) { color = 'bg-yellow-400 text-white shadow-lg'; lbl = `IN\n${timeStr}`; }
-                                            if(s == 2) { color = 'bg-green-500 text-white shadow-lg'; lbl = `OUT\n${timeStr}`; }
-                                            return `
-                                                <td class="p-1 text-center">
-                                                    <button onclick="handleTruck('${st}', '${it}')" class="w-10 h-10 rounded-lg font-black flex flex-col items-center justify-center leading-none text-[8px] btn-3d mx-auto ${color}">
-                                                        ${lbl.replace('\n', '<br>')}
-                                                    </button>
-                                                </td>
-                                            `;
-                                        }).join('')}
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="bg-white rounded-[2rem] shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto"><table class="w-full text-left text-[10px]">
+                        <thead class="bg-gray-50 text-gray-400 font-bold uppercase tracking-tighter"><tr><th class="p-3">Trạm</th>${ITEMS.map(it => `<th class="p-3 text-center">${it.split('-')[0]}</th>`).join('')}</tr></thead>
+                        <tbody>
+                            ${STATIONS.map(st => `
+                                <tr class="border-t border-gray-50"><td class="p-3 font-extrabold text-gray-700 whitespace-nowrap">${st.split('. ')[1]}</td>
+                                    ${ITEMS.map(it => {
+                                        const status = state.truck.find(t => t.Station === st && t.Item === it);
+                                        let s = status?.Status || 0;
+                                        let color = 'bg-gray-100 text-gray-300';
+                                        let lbl = 'WAIT';
+                                        let timeStr = (status?.Time && status.Time.includes('T')) ? status.Time.split('T')[1].substring(0,5) : (status?.Time || '--:--');
+                                        if(s == 1) { color = 'bg-yellow-400 text-white'; lbl = `IN\n${timeStr}`; }
+                                        if(s == 2) { color = 'bg-green-500 text-white'; lbl = `OUT\n${timeStr}`; }
+                                        return `<td class="p-1 text-center"><button onclick="handleTruck('${st}', '${it}')" class="w-10 h-10 rounded-lg font-black flex flex-col items-center justify-center leading-none text-[8px] btn-3d mx-auto ${color}">${lbl.replace('\n', '<br>')}</button></td>`;
+                                    }).join('')}
+                                </tr>`).join('')}
+                        </tbody></table></div>
                 </div>
             `;
         }
@@ -290,135 +214,78 @@
         // --- TAB 4: THỐNG KÊ ---
         function renderStats(container) {
             let totalP = 0, totalA = 0;
-            state.departments.forEach(d => {
-                for(let i=1; i<=6; i++) { 
-                    totalP += Number(d[`Item${i}_P`]) || 0; 
-                    totalA += Number(d[`Item${i}_A`]) || 0; 
-                }
-            });
-
+            state.departments.forEach(d => { for(let i=1; i<=6; i++) { totalP += (Number(d[`Item${i}_P`]) || 0); totalA += (Number(d[`Item${i}_A`]) || 0); } });
             container.innerHTML = `
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-white p-5 rounded-[2rem] shadow-sm ring-1 ring-gray-100 text-center overflow-hidden">
-                        <p class="text-[9px] font-bold text-gray-400 uppercase">Tổng Plan</p>
-                        <h2 class="text-2xl font-black truncate">${totalP}</h2>
-                    </div>
-                    <div class="bg-red-600 p-5 rounded-[2rem] shadow-xl text-center text-white overflow-hidden">
-                        <p class="text-[9px] font-bold text-red-100 uppercase">Đã phát</p>
-                        <h2 class="text-2xl font-black truncate">${totalA}</h2>
-                    </div>
+                    <div class="bg-white p-5 rounded-[2rem] shadow-sm text-center"><p class="text-[9px] font-bold text-gray-400 uppercase">Tổng Plan</p><h2 class="text-2xl font-black">${totalP}</h2></div>
+                    <div class="bg-red-600 p-5 rounded-[2rem] shadow-xl text-center text-white"><p class="text-[9px] font-bold text-red-100 uppercase">Đã phát</p><h2 class="text-2xl font-black">${totalA}</h2></div>
                 </div>
-                <div class="bg-white rounded-[2rem] p-6 shadow-sm ring-1 ring-gray-100 space-y-4">
+                <div class="bg-white rounded-[2rem] p-6 shadow-sm space-y-4">
                     <h3 class="font-extrabold text-gray-800">Tiến độ Trạm</h3>
                     ${STATIONS.map(st => {
                         const depts = state.departments.filter(d => String(d.Station).trim() === st.trim());
                         const done = depts.filter(isDoneAll).length;
                         const pct = depts.length ? Math.round((done/depts.length)*100) : 0;
-                        const isExpanded = state.drillDownStation === st;
                         return `
                             <div class="space-y-2">
-                                <button onclick="toggleDrillDown('${st}')" class="w-full flex justify-between items-center text-left">
-                                    <span class="text-xs font-bold text-gray-600">${st}</span>
-                                    <span class="text-[10px] font-black ${pct === 100 ? 'text-green-600' : 'text-red-500'}">${done}/${depts.length} BP</span>
-                                </button>
-                                <div class="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
-                                    <div class="h-full bg-red-500 transition-all duration-700" style="width: ${pct}%"></div>
-                                </div>
-                                ${isExpanded ? `
-                                    <div class="bg-gray-50 rounded-xl p-2 mt-2 grid gap-1">
-                                        ${depts.map(d => `
-                                            <div class="flex justify-between text-[9px] font-bold p-2 bg-white rounded-lg">
-                                                <span class="${isDoneAll(d) ? 'text-green-600' : 'text-gray-500'}">${d.Dept}</span>
-                                                <span>${getDoneCount(d)}/6</span>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `;
+                                <button onclick="toggleDrillDown('${st}')" class="w-full flex justify-between items-center"><span class="text-xs font-bold text-gray-600">${st}</span><span class="text-[10px] font-black ${pct === 100 ? 'text-green-600' : 'text-red-500'}">${done}/${depts.length} BP</span></button>
+                                <div class="w-full h-1 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-red-500 transition-all duration-700" style="width: ${pct}%"></div></div>
+                                ${state.drillDownStation === st ? `<div class="bg-gray-50 rounded-xl p-2 mt-2 grid gap-1">${depts.map(d => `<div class="flex justify-between text-[9px] font-bold p-2 bg-white rounded-lg"><span class="${isDoneAll(d) ? 'text-green-600' : 'text-gray-500'}">${d.Dept}</span><span>${getDoneCount(d)}/6</span></div>`).join('')}</div>` : ''}
+                            </div>`;
                     }).join('')}
                 </div>
             `;
         }
 
-        // Helpers
-        function toggleDept(name, isOpen) {
-            if(isOpen) state.expandedDepts.add(name);
-            else state.expandedDepts.delete(name);
-        }
+        function toggleDept(name, isOpen) { if(isOpen) state.expandedDepts.add(name); else state.expandedDepts.delete(name); }
+        function toggleDrillDown(st) { state.drillDownStation = (state.drillDownStation === st) ? null : st; render(); }
 
-        function toggleDrillDown(st) {
-            state.drillDownStation = (state.drillDownStation === st) ? null : st;
-            render();
-        }
-
+        // LOGIC SỬA LỖI 4/6: Chỉ đếm những món có Plan > 0 và đã giao đủ
         function isDoneAll(d) {
+            let needed = 0, got = 0;
             for(let i=1; i<=6; i++) {
-                if((Number(d[`Item${i}_P`]) || 0) > 0 && (Number(d[`Item${i}_A`]) || 0) < (Number(d[`Item${i}_P`]) || 0)) return false;
+                let p = Number(d[`Item${i}_P`]) || 0;
+                let a = Number(d[`Item${i}_A`]) || 0;
+                if(p > 0) { needed++; if(a >= p) got++; }
             }
-            return true;
+            return needed > 0 ? got === needed : true;
         }
 
         function getDoneCount(d) {
-            let c = 0;
+            let got = 0;
             for(let i=1; i<=6; i++) {
-                if((Number(d[`Item${i}_P`]) || 0) > 0 && (Number(d[`Item${i}_A`]) || 0) >= (Number(d[`Item${i}_P`]) || 0)) c++;
-                if((Number(d[`Item${i}_P`]) || 0) === 0) c++; 
+                let p = Number(d[`Item${i}_P`]) || 0;
+                let a = Number(d[`Item${i}_A`]) || 0;
+                if(p > 0 && a >= p) got++;
             }
-            return c;
+            return got;
         }
 
         async function confirmGift(deptName, idx, val) {
             const dept = state.departments.find(d => d.Dept === deptName);
-            const itemName = ITEMS[idx];
-            const contactName = dept.Contact || 'Chưa rõ';
-
             const res = await Swal.fire({
                 title: 'Xác nhận giao đủ?',
-                html: `
-                    <div class="text-left text-sm space-y-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
-                        <div class="flex justify-between border-b pb-1"><span class="text-slate-400 font-semibold">BỘ PHẬN:</span> <span class="font-bold text-slate-800">${deptName}</span></div>
-                        <div class="flex justify-between border-b pb-1"><span class="text-slate-400 font-semibold">NGƯỜI NHẬN:</span> <span class="font-bold text-slate-800">${contactName}</span></div>
-                        <div class="flex justify-between border-b pb-1"><span class="text-slate-400 font-semibold">MÓN QUÀ:</span> <span class="font-bold text-red-600">${itemName}</span></div>
-                        <div class="flex justify-between pt-1"><span class="text-slate-400 font-semibold">SỐ LƯỢNG:</span> <span class="font-black text-lg text-slate-900">${val} cái</span></div>
-                    </div>
-                `,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#e11d48',
-                confirmButtonText: 'Đã giao xong',
-                cancelButtonText: 'Hủy'
+                html: `<div class="text-left text-sm space-y-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
+                    <div class="flex justify-between"><span class="text-slate-400 font-semibold uppercase">Bộ phận:</span> <span class="font-bold text-slate-800">${deptName}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400 font-semibold uppercase">PIC:</span> <span class="font-bold text-slate-800">${dept.Contact || '---'}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400 font-semibold uppercase">Món quà:</span> <span class="font-bold text-red-600">${ITEMS[idx]}</span></div>
+                    <div class="flex justify-between pt-1"><span class="text-slate-400 font-semibold uppercase">Số lượng:</span> <span class="font-black text-lg text-slate-900">${val} cái</span></div>
+                </div>`,
+                icon: 'question', showCancelButton: true, confirmButtonColor: '#e11d48', confirmButtonText: 'Đã giao xong'
             });
-            
             if (!res.isConfirmed) return;
-
-            // Optimistic Update
-            dept[`Item${idx+1}_A`] = val;
-            render();
-
-            fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'UPDATE_GIFT', data: { dept: deptName, itemIdx: idx, value: val } })
-            });
+            dept[`Item${idx+1}_A`] = val; render();
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'UPDATE_GIFT', data: { dept: deptName, itemIdx: idx, value: val } }) });
         }
 
         async function handleTruck(st, it) {
             const cur = state.truck.find(t => t.Station === st && t.Item === it);
             let nextS = (!cur || cur.Status == 0) ? 1 : (cur.Status == 1 ? 2 : 0);
-            
-            if(nextS === 0 && cur.Status == 2) return; // Khóa không cho reset nếu đã OUT
-
             const now = new Date();
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            
-            if(!cur) state.truck.push({ Station: st, Item: it, Status: nextS, Time: timeStr });
-            else { cur.Status = nextS; cur.Time = timeStr; }
+            if(!cur) state.truck.push({ Station: st, Item: it, Status: nextS, Time: timeStr }); else { cur.Status = nextS; cur.Time = timeStr; }
             render();
-
-            fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'UPDATE_TRUCK', data: { station: st, item: it, status: nextS, time: timeStr } })
-            });
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'UPDATE_TRUCK', data: { station: st, item: it, status: nextS, time: timeStr } }) });
         }
     </script>
 </body>
