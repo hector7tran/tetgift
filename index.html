@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SEHC Tet Gift 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .card-3d { transition: transform 0.2s; box-shadow: 0 10px 30px -5px rgba(220, 38, 38, 0.1); }
+        .card-3d:active { transform: scale(0.97); }
+        .tab-active { color: #dc2626; border-bottom: 3px solid #dc2626; }
+        .gradient-red { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 pb-20">
+
+    <header class="gradient-red text-white p-6 rounded-b-[2rem] shadow-lg sticky top-0 z-50">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tight">SEHC TET 2026</h1>
+                <p class="text-xs opacity-80">Gift Distribution System</p>
+            </div>
+            <div id="sync-status" class="bg-white/20 p-2 rounded-full">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            </div>
+        </div>
+    </header>
+
+    <main id="app" class="p-4">
+        <nav class="flex justify-around mb-6 bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+            <button onclick="switchTab('receive')" id="btn-receive" class="flex-1 py-2 text-sm font-semibold tab-active transition-all">Nhận quà</button>
+            <button onclick="switchTab('truck')" id="btn-truck" class="flex-1 py-2 text-sm font-semibold text-gray-400">Truck Status</button>
+            <button onclick="switchTab('stats')" id="btn-stats" class="flex-1 py-2 text-sm font-semibold text-gray-400">Thống kê</button>
+        </nav>
+
+        <div id="filter-section" class="space-y-3 mb-6">
+            <select id="station-filter" onchange="renderReceiveTab()" class="w-full p-4 rounded-2xl border-none shadow-sm glass text-gray-700 font-bold focus:ring-2 ring-red-500">
+                <option value="">Chọn Trạm phát</option>
+                <option>Trạm DA1</option>
+                <option>Trạm DA2 - DA3</option>
+                <option>Trạm EPS - VD4</option>
+                <option>Trạm VD1 – VD2</option>
+                <option>Trạm VD2 – VD3</option>
+                <option>Trạm Admin</option>
+            </select>
+            <div class="relative">
+                <input type="text" id="search-dept" oninput="renderReceiveTab()" placeholder="Tìm bộ phận..." class="w-full p-4 pl-12 rounded-2xl border-none shadow-sm glass focus:ring-2 ring-red-500">
+                <i data-lucide="search" class="absolute left-4 top-4 w-5 h-5 text-gray-400"></i>
+            </div>
+        </div>
+
+        <div id="tab-content" class="space-y-4">
+            </div>
+    </main>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbx67zq7nRinZ5XDf2lQmDZWzod0Zi5UX3v3wN241IoDOHtIjFHOSZcoU_SxD2TdwMld/exec';
+        const GIFTS = ['Bếp từ-Nồi lầu', 'Bộ nồi chảo', 'Máy massage', 'Nồi chiên', 'Nồi cơm điện', 'Set bánh kẹo'];
+        let state = {
+            currentTab: 'receive',
+            departments: [],
+            truckStatus: [],
+            loading: false
+        };
+
+        // Initialize
+        window.onload = async () => {
+            lucide.createIcons();
+            loadFromCache();
+            await fetchData();
+        };
+
+        function loadFromCache() {
+            const cache = localStorage.getItem('sehc_data');
+            if (cache) {
+                const data = JSON.parse(cache);
+                state.departments = data.departments;
+                state.truckStatus = data.truckStatus;
+                renderTabs();
+            }
+        }
+
+        async function fetchData() {
+            document.getElementById('sync-status').classList.add('animate-spin');
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                state.departments = data.departments;
+                state.truckStatus = data.truckStatus;
+                localStorage.setItem('sehc_data', JSON.stringify(data));
+                renderTabs();
+            } catch (e) {
+                console.error("Fetch failed", e);
+            } finally {
+                document.getElementById('sync-status').classList.remove('animate-spin');
+            }
+        }
+
+        function switchTab(tab) {
+            state.currentTab = tab;
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('tab-active', 'text-gray-400'));
+            document.getElementById(`btn-${tab}`).classList.add('tab-active');
+            if(tab !== 'receive') {
+                document.getElementById('filter-section').classList.add('hidden');
+            } else {
+                document.getElementById('filter-section').classList.remove('hidden');
+            }
+            renderTabs();
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tab-content');
+            container.innerHTML = '';
+
+            if (state.currentTab === 'receive') renderReceiveTab();
+            else if (state.currentTab === 'truck') renderTruckTab();
+            else renderStatsTab();
+            
+            lucide.createIcons();
+        }
+
+        // --- Tab 1: Nhận Quà Logic ---
+        function renderReceiveTab() {
+            const station = document.getElementById('station-filter').value;
+            const search = document.getElementById('search-dept').value.toLowerCase();
+            const container = document.getElementById('tab-content');
+            
+            if (!station) {
+                container.innerHTML = `<div class="text-center py-20 text-gray-400">Vui lòng chọn Trạm để bắt đầu</div>`;
+                return;
+            }
+
+            let filtered = state.departments.filter(d => d.Station === station && d.Dept.toLowerCase().includes(search));
+            
+            // Sort logic: Chưa đủ lên đầu, đủ 6 items xuống cuối
+            filtered.sort((a, b) => {
+                const aCount = GIFTS.filter((_, i) => a[`Item${i+1}`] == 1).length;
+                const bCount = GIFTS.filter((_, i) => b[`Item${i+1}`] == 1).length;
+                if (aCount === 6 && bCount < 6) return 1;
+                if (aCount < 6 && bCount === 6) return -1;
+                return 0;
+            });
+
+            container.innerHTML = filtered.map(dept => {
+                const completedCount = GIFTS.filter((_, i) => dept[`Item${i+1}`] == 1).length;
+                const isAllDone = completedCount === 6;
+                
+                return `
+                    <div class="glass rounded-3xl p-4 card-3d ${isAllDone ? 'bg-green-50' : ''}">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold text-lg ${isAllDone ? 'text-green-700' : 'text-red-600'}">${dept.Dept}</h3>
+                                <p class="text-xs text-gray-500">${dept.Contact_Name} • <a href="tel:${dept.Phone}" class="text-blue-500 font-bold">${dept.Phone}</a></p>
+                            </div>
+                            <span class="bg-gray-100 px-3 py-1 rounded-full text-xs font-bold">${completedCount}/6 Items</span>
+                        </div>
+                        <div class="grid grid-cols-1 gap-2">
+                            ${GIFTS.map((g, i) => {
+                                const isDone = dept[`Item${i+1}`] == 1;
+                                return `
+                                    <div class="flex justify-between items-center p-3 rounded-xl ${isDone ? 'bg-green-100 opacity-60' : 'bg-white shadow-sm'}">
+                                        <span class="text-sm font-medium">${g}</span>
+                                        ${isDone ? 
+                                            `<i data-lucide="check-circle" class="text-green-600 w-5 h-5"></i>` : 
+                                            `<button onclick="confirmDelivery('${dept.Dept}', ${i})" class="bg-red-500 text-white text-xs px-4 py-2 rounded-lg font-bold">Xác nhận</button>`
+                                        }
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // Optimistic UI Update
+        function confirmDelivery(deptName, itemIdx) {
+            Swal.fire({
+                title: 'Xác nhận giao quà?',
+                text: "Thao tác này sẽ cập nhật dữ liệu tức thì.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'Đã giao đủ'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // 1. Cập nhật Local State ngay lập tức (Optimistic)
+                    const dept = state.departments.find(d => d.Dept === deptName);
+                    dept[`Item${itemIdx+1}`] = 1;
+                    renderReceiveTab();
+                    
+                    // 2. Gửi ngầm lên Server
+                    fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'updateGift', dept: deptName, itemIdx: itemIdx })
+                    });
+
+                    Swal.fire({ title: 'Thành công!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+                }
+            });
+        }
+
+        // --- Tab 2: Truck Status Logic ---
+        function renderTruckTab() {
+            const stations = ['Trạm DA1', 'Trạm DA2 - DA3', 'Trạm EPS - VD4', 'Trạm VD1 – VD2', 'Trạm VD2 – VD3', 'Trạm Admin'];
+            const container = document.getElementById('tab-content');
+            
+            let html = `<div class="overflow-x-auto shadow-sm rounded-2xl"><table class="w-full text-sm text-left bg-white">
+                <thead class="bg-gray-100 text-xs uppercase text-gray-600 font-bold">
+                    <tr><th class="p-3">Trạm</th>${GIFTS.map(g => `<th class="p-3 text-center">${g.split('-')[0]}</th>`).join('')}</tr>
+                </thead>
+                <tbody>`;
+
+            stations.forEach(st => {
+                html += `<tr class="border-t border-gray-50"><td class="p-3 font-bold text-gray-700">${st}</td>`;
+                GIFTS.forEach(g => {
+                    const status = state.truckStatus.find(s => s.station === st && s.item === g);
+                    let color = 'bg-gray-100';
+                    let label = 'Chờ';
+                    if (status?.status === 'Arrived') { color = 'bg-yellow-400 text-white'; label = 'Đến'; }
+                    if (status?.status === 'Departed') { color = 'bg-green-500 text-white'; label = 'Rời'; }
+                    
+                    html += `<td class="p-2">
+                        <button onclick="toggleTruck('${st}', '${g}')" class="w-full py-3 rounded-xl text-[10px] font-bold transition-all ${color}">
+                            ${label}<br>${status?.time || '--:--'}
+                        </button>
+                    </td>`;
+                });
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+        }
+
+        async function toggleTruck(station, item) {
+            // Logic: 1 loại quà không thể 'Arrived' ở 2 trạm cùng lúc
+            const currentItemAtOtherStations = state.truckStatus.find(s => s.item === item && s.status === 'Arrived');
+            const currentStatus = state.truckStatus.find(s => s.station === station && s.item === item);
+
+            let nextStatus = 'Arrived';
+            if (currentStatus?.status === 'Arrived') nextStatus = 'Departed';
+            else if (currentStatus?.status === 'Departed') return; // Đã xong không đổi lại
+
+            if (nextStatus === 'Arrived' && currentItemAtOtherStations) {
+                Swal.fire('Cảnh báo', `Quà này hiện đang ở ${currentItemAtOtherStations.station}. Vui lòng xác nhận xe đã rời đi trước khi đến trạm mới.`, 'warning');
+                return;
+            }
+
+            // Update UI ngầm
+            const now = new Date();
+            const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            const idx = state.truckStatus.findIndex(s => s.station === station && s.item === item);
+            if(idx > -1) {
+                state.truckStatus[idx].status = nextStatus;
+                state.truckStatus[idx].time = timeStr;
+            } else {
+                state.truckStatus.push({station, item, status: nextStatus, time: timeStr});
+            }
+            
+            renderTruckTab();
+            
+            // Gửi Server
+            fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'updateTruck', station, item, status: nextStatus, time: timeStr })
+            });
+        }
+
+        // --- Tab 3: Thống kê ---
+        function renderStatsTab() {
+            const totalDepts = state.departments.length;
+            let totalGifts = totalDepts * 6;
+            let totalDelivered = 0;
+            state.departments.forEach(d => {
+                GIFTS.forEach((_, i) => { if(d[`Item${i+1}`] == 1) totalDelivered++; });
+            });
+
+            const percent = ((totalDelivered / totalGifts) * 100).toFixed(1);
+
+            document.getElementById('tab-content').innerHTML = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="gradient-red text-white p-6 rounded-[2rem] shadow-lg">
+                        <p class="text-xs opacity-80 uppercase font-bold">Tổng Quà Phát</p>
+                        <h2 class="text-3xl font-black">${totalGifts}</h2>
+                    </div>
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+                        <p class="text-xs text-gray-400 uppercase font-bold">Đã Giao</p>
+                        <h2 class="text-3xl font-black text-green-600">${totalDelivered}</h2>
+                        <p class="text-[10px] text-gray-400 mt-1">Hoàn thành ${percent}%</p>
+                    </div>
+                </div>
+                <div class="mt-6 space-y-3">
+                    <h3 class="font-bold px-2">Trạng thái theo trạm</h3>
+                    ${['Trạm DA1', 'Trạm DA2 - DA3', 'Trạm EPS - VD4', 'Trạm VD1 – VD2', 'Trạm VD2 – VD3', 'Trạm Admin'].map(st => {
+                        const stDepts = state.departments.filter(d => d.Station === st);
+                        const delivered = stDepts.reduce((acc, d) => acc + GIFTS.filter((_, i) => d[`Item${i+1}`] == 1).length, 0);
+                        const total = stDepts.length * 6;
+                        return `
+                            <div class="glass p-4 rounded-2xl flex justify-between items-center">
+                                <span class="font-bold text-gray-700">${st}</span>
+                                <span class="text-sm font-bold text-red-500">${delivered}/${total}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
