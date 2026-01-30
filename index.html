@@ -51,7 +51,7 @@
 
         let state = { currentTab: 'receive', selectedStation: '', searchTerm: '', departments: [], truck: [], expandedDepts: new Set(), drillDownStation: null };
 
-        window.onload = async () => { loadCache(); await fetchData(); lucide.createIcons(); };
+        window.onload = async () => { loadCache(); await fetchData(); lucide.createIcons(); setInterval(fetchData, 20000); };
 
         function loadCache() {
             const cache = localStorage.getItem('sehc_data');
