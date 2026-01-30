@@ -3,44 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SEHC TET GIFTS 2026</title>
+    <title>SEHC TET 2026 GIFTS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fcfcfc; color: #1a1a1a; }
-        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fcfcfc; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
+        .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
         .tab-active { color: #e11d48; border-bottom: 3px solid #e11d48; font-weight: 800; }
         .btn-3d { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border-bottom: 4px solid rgba(0,0,0,0.1); }
         .btn-3d:active { transform: translateY(2px); border-bottom-width: 1px; }
-        .pack-badge { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); color: #475569; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
-        /* Fix column width for Truck tab header */
-        .truck-header-cell { min-width: 55px; line-height: 1.1; }
     </style>
 </head>
 <body class="pb-24">
 
     <nav class="sticky top-0 z-50 glass-card px-4 py-3 flex justify-between items-center border-b">
-        <div class="flex flex-col text-gray-800">
-            <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest">SEHC</span>
-            <span class="text-base font-black italic">TET GIFTS</span>
+        <div class="flex flex-col">
+            <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest">Samsung SEHC</span>
+            <span class="text-base font-black italic text-gray-800">TET 2026 GIFTS</span>
         </div>
-        <div id="sync-status" class="w-8 h-8 flex items-center justify-center rounded-full bg-green-50 text-green-600">
+        <div id="sync-status" class="w-8 h-8 flex items-center justify-center rounded-full bg-green-50 text-green-600 transition-all">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         </div>
     </nav>
 
     <div class="max-w-md mx-auto p-3 space-y-4">
         <div class="flex bg-white rounded-2xl p-1 shadow-sm ring-1 ring-gray-100 overflow-x-auto no-scrollbar">
-            <button onclick="switchTab('receive')" id="t-receive" class="flex-none px-4 py-3 text-xs font-bold rounded-xl tab-active">Nhận quà</button>
-            <button onclick="switchTab('total')" id="t-total" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 rounded-xl">Tổng quà</button>
-            <button onclick="switchTab('truck')" id="t-truck" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 rounded-xl">Truck</button>
-            <button onclick="switchTab('stats')" id="t-stats" class="flex-none px-4 py-3 text-xs font-bold text-gray-400 rounded-xl">Thống kê</button>
+            <button onclick="switchTab('receive')" id="t-receive" class="flex-none px-4 py-3 text-xs font-bold rounded-xl transition-all tab-active">Nhận quà</button>
+            <button onclick="switchTab('total')" id="t-total" class="flex-none px-4 py-3 text-xs font-bold rounded-xl transition-all text-gray-400">Tổng quà</button>
+            <button onclick="switchTab('truck')" id="t-truck" class="flex-none px-4 py-3 text-xs font-bold rounded-xl transition-all text-gray-400">Truck</button>
+            <button onclick="switchTab('stats')" id="t-stats" class="flex-none px-4 py-3 text-xs font-bold rounded-xl transition-all text-gray-400">Thống kê</button>
         </div>
-        <div id="main-content"></div>
+
+        <div id="main-content" class="min-h-[60vh]"></div>
     </div>
 
     <script>
@@ -51,15 +50,54 @@
 
         let state = { currentTab: 'receive', selectedStation: '', searchTerm: '', departments: [], truck: [], expandedDepts: new Set(), drillDownStation: null };
 
-        window.onload = async () => { loadCache(); await fetchData(); lucide.createIcons(); setInterval(fetchData, 20000); };
+        // CORE LOGIC: Tính toán thống kê duy nhất cho toàn bộ App
+        function getDeptStats(d) {
+            let regTypes = 0;    // Số loại quà có Plan > 0
+            let doneTypes = 0;   // Số loại quà đã nhận đủ (Actual >= Plan)
+            let totalPlan = 0;   // Tổng số lượng món quà Plan
+            let totalActual = 0; // Tổng số lượng món quà đã nhận
+
+            for (let i = 1; i <= 6; i++) {
+                const p = Number(d[`Item${i}_P`]) || 0;
+                const a = Number(d[`Item${i}_A`]) || 0;
+                if (p > 0) {
+                    regTypes++;
+                    totalPlan += p;
+                    totalActual += a;
+                    if (a >= p) doneTypes++;
+                }
+            }
+            
+            return {
+                regTypes,
+                doneTypes,
+                totalPlan,
+                totalActual,
+                // Một bộ phận được coi là XONG khi: Có đăng ký quà VÀ tất cả loại đăng ký đều xong
+                isAllDone: regTypes > 0 && doneTypes >= regTypes
+            };
+        }
+
+        window.onload = async () => {
+            loadCache();
+            await fetchData();
+            lucide.createIcons();
+            setInterval(fetchData, 20000); 
+        };
 
         function loadCache() {
             const cache = localStorage.getItem('sehc_data');
-            if (cache) { const d = JSON.parse(cache); state.departments = d.departments; state.truck = d.truck; render(); }
+            if (cache) {
+                const d = JSON.parse(cache);
+                state.departments = d.departments;
+                state.truck = d.truck;
+                render();
+            }
         }
 
         async function fetchData() {
-            document.getElementById('sync-status').classList.add('animate-spin');
+            const syncIcon = document.getElementById('sync-status');
+            syncIcon.classList.add('animate-spin');
             try {
                 const res = await fetch(API_URL);
                 const d = await res.json();
@@ -67,21 +105,22 @@
                 state.truck = d.truck;
                 localStorage.setItem('sehc_data', JSON.stringify(d));
                 render();
-            } catch (e) { console.error(e); }
-            document.getElementById('sync-status').classList.remove('animate-spin');
+            } catch (e) { console.error("Fetch Error:", e); }
+            syncIcon.classList.remove('animate-spin');
         }
 
         function switchTab(t) {
             state.currentTab = t;
             ['receive', 'total', 'truck', 'stats'].forEach(id => {
-                const btn = document.getElementById('t-'+id);
-                if(btn) btn.className = `flex-none px-4 py-3 text-xs font-bold transition-all rounded-xl ${id === t ? 'tab-active' : 'text-gray-400'}`;
+                const btn = document.getElementById('t-' + id);
+                if (btn) btn.className = `flex-none px-4 py-3 text-xs font-bold transition-all rounded-xl ${id === t ? 'tab-active' : 'text-gray-400'}`;
             });
             render();
         }
 
         function render() {
             const container = document.getElementById('main-content');
+            if (!container) return;
             if (state.currentTab === 'receive') renderReceive(container);
             else if (state.currentTab === 'total') renderTotal(container);
             else if (state.currentTab === 'truck') renderTruck(container);
@@ -89,34 +128,18 @@
             lucide.createIcons();
         }
 
-        // HÀM TÍNH TIẾN ĐỘ CHÍNH XÁC
-        function getDeptProgress(d) {
-            let regTypes = 0, doneTypes = 0, totalP = 0, totalA = 0;
-            for(let i=1; i<=6; i++) {
-                let p = Number(d[`Item${i}_P`]) || 0;
-                let a = Number(d[`Item${i}_A`]) || 0;
-                if(p > 0) {
-                    regTypes++;
-                    totalP += p;
-                    totalA += a;
-                    if(a >= p) doneTypes++;
-                }
-            }
-            return { regTypes, doneTypes, totalP, totalA };
-        }
-
         // --- TAB 1: NHẬN QUÀ ---
         function renderReceive(container) {
             container.innerHTML = `
                 <div class="space-y-4">
-                    <select onchange="state.selectedStation = this.value; render();" class="w-full p-4 rounded-2xl glass-card font-bold border-none bg-white">
+                    <select onchange="state.selectedStation = this.value; render();" class="w-full p-4 rounded-2xl glass-card font-bold border-none ring-1 ring-gray-100 bg-white">
                         <option value="">-- Chọn Trạm --</option>
                         ${STATIONS.map(s => `<option value="${s}" ${state.selectedStation === s ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
                     ${state.selectedStation ? `
-                        <div class="relative"><input type="text" placeholder="Tìm bộ phận..." oninput="state.searchTerm = this.value; renderReceiveList();" value="${state.searchTerm}" class="w-full p-4 pl-12 rounded-2xl border-none shadow-sm bg-white"><i data-lucide="search" class="absolute left-4 top-4 w-5 h-5 text-gray-400"></i></div>
+                        <div class="relative"><input type="text" placeholder="Tìm bộ phận..." oninput="state.searchTerm = this.value; renderReceiveList();" value="${state.searchTerm}" class="w-full p-4 pl-12 rounded-2xl border-none shadow-sm ring-1 ring-gray-100 bg-white"><i data-lucide="search" class="absolute left-4 top-4 w-5 h-5 text-gray-400"></i></div>
                         <div id="receive-list" class="space-y-3"></div>
-                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Vui lòng chọn trạm phát</div>'}
+                    ` : '<div class="text-center py-20 text-gray-400 font-medium">Vui lòng chọn trạm phát để hiển thị danh sách</div>'}
                 </div>
             `;
             if (state.selectedStation) renderReceiveList();
@@ -125,126 +148,114 @@
         function renderReceiveList() {
             const list = document.getElementById('receive-list');
             let filtered = state.departments.filter(d => String(d.Station).trim() === state.selectedStation.trim() && d.Dept.toLowerCase().includes(state.searchTerm.toLowerCase()));
+            
+            // Sort: BP xong xuống cuối
             filtered.sort((a, b) => {
-                const progA = getDeptProgress(a);
-                const progB = getDeptProgress(b);
-                const isAllA = progA.regTypes > 0 && progA.doneTypes === progA.regTypes;
-                const isAllB = progB.regTypes > 0 && progB.doneTypes === progB.regTypes;
-                return isAllA === isAllB ? 0 : isAllA ? 1 : -1;
+                const statA = getDeptStats(a);
+                const statB = getDeptStats(b);
+                return statA.isAllDone === statB.isAllDone ? 0 : statA.isAllDone ? 1 : -1;
             });
 
             list.innerHTML = filtered.map(dept => {
-                const prog = getDeptProgress(dept);
-                const isAll = prog.regTypes > 0 && prog.doneTypes === prog.regTypes;
+                const stats = getDeptStats(dept);
                 return `
-                    <details class="group rounded-3xl overflow-hidden transition-all ${isAll ? 'bg-green-50 ring-1 ring-green-200' : 'bg-white shadow-sm'}" ${state.expandedDepts.has(dept.Dept) ? 'open' : ''} ontoggle="toggleDept('${dept.Dept}', this.open)">
+                    <details class="group rounded-3xl overflow-hidden transition-all ${stats.isAllDone ? 'bg-green-50 ring-1 ring-green-200' : 'bg-white shadow-sm ring-1 ring-gray-50'}" ${state.expandedDepts.has(dept.Dept) ? 'open' : ''} ontoggle="state.expandedDepts[this.open ? 'add' : 'delete']('${dept.Dept}')">
                         <summary class="p-4 flex justify-between items-center cursor-pointer">
-                            <div class="pr-2">
-                                <h4 class="font-extrabold text-sm ${isAll ? 'text-green-700' : 'text-gray-800'}">${dept.Dept}</h4>
-                                <span class="text-[9px] uppercase font-bold text-gray-400">${prog.doneTypes}/${prog.regTypes} ITEMS XONG</span>
+                            <div>
+                                <h4 class="font-extrabold text-sm ${stats.isAllDone ? 'text-green-700' : 'text-gray-800'}">${dept.Dept}</h4>
+                                <span class="text-[9px] uppercase font-bold text-gray-400">${stats.doneTypes}/${stats.regTypes} ITEMS XONG</span>
                             </div>
                             <i data-lucide="chevron-down" class="w-5 h-5 text-gray-300 group-open:rotate-180 transition-transform"></i>
                         </summary>
-                        <div class="px-4 pb-4 space-y-3 pt-2 border-t border-gray-50 text-gray-800">
+                        <div class="px-4 pb-4 space-y-3 pt-2 border-t border-gray-50">
                             <div class="flex justify-between items-center bg-gray-50 p-3 rounded-2xl">
                                 <div><p class="text-[9px] text-gray-400 font-bold uppercase">Người nhận</p><p class="text-xs font-bold">${dept.Contact || '---'}</p></div>
-                                <a href="tel:${dept.Phone}" class="w-9 h-9 flex items-center justify-center bg-blue-500 text-white rounded-full btn-3d"><i data-lucide="phone" class="w-4 h-4"></i></a>
+                                <a href="tel:${dept.Phone}" class="w-9 h-9 flex items-center justify-center bg-blue-500 text-white rounded-full btn-3d shadow-lg shadow-blue-100"><i data-lucide="phone" class="w-4 h-4"></i></a>
                             </div>
-                            <div class="grid gap-2">${ITEMS.map((name, i) => renderItemRow(dept, name, i)).join('')}</div>
+                            <div class="grid gap-2">${ITEMS.map((name, i) => {
+                                const p = Number(dept[`Item${i+1}_P`]);
+                                const a = Number(dept[`Item${i+1}_A`]);
+                                if (p <= 0) return '';
+                                const isF = a >= p;
+                                return `
+                                    <div class="p-3 rounded-2xl ${isF ? 'bg-green-100/50' : 'bg-white ring-1 ring-gray-50'}">
+                                        <div class="flex justify-between items-start mb-1"><span class="text-xs font-bold ${isF ? 'text-green-700' : 'text-gray-600'}">${name}</span><span class="text-xs font-black">${a}/${p}</span></div>
+                                        <div class="flex justify-between items-center">
+                                            <div class="flex gap-1"><span class="text-[9px] font-bold px-2 py-0.5 rounded-full pack-badge">${Math.floor(p/PACKAGING[i])} Thùng</span><span class="text-[9px] font-bold px-2 py-0.5 rounded-full pack-badge">${p%PACKAGING[i]} Lẻ</span></div>
+                                            ${isF ? `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>` : `<button onclick="confirmGift('${dept.Dept}', ${i}, ${p})" class="bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-lg btn-3d">GIAO ĐỦ</button>`}
+                                        </div>
+                                    </div>`;
+                            }).join('')}</div>
                         </div>
-                    </details>
-                `;
+                    </details>`;
             }).join('');
             lucide.createIcons();
         }
 
-        function renderItemRow(dept, name, i) {
-            const p = Number(dept[`Item${i+1}_P`]) || 0;
-            const a = Number(dept[`Item${i+1}_A`]) || 0;
-            if (p === 0) return ''; 
-            const isF = a >= p;
-            const size = PACKAGING[i];
-            return `
-                <div class="p-3 rounded-2xl ${isF ? 'bg-green-100/50' : 'bg-white ring-1 ring-gray-50'}">
-                    <div class="flex justify-between items-start mb-1"><span class="text-xs font-bold ${isF ? 'text-green-700' : 'text-gray-600'}">${name}</span><span class="text-xs font-black">${a}/${p}</span></div>
-                    <div class="flex justify-between items-center">
-                        <div class="flex gap-1">
-                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full pack-badge">${Math.floor(p/size)} Thùng</span>
-                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full pack-badge">${p % size} Lẻ</span>
-                        </div>
-                        ${isF ? `<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>` : `<button onclick="confirmGift('${dept.Dept}', ${i}, ${p})" class="bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-lg btn-3d">GIAO ĐỦ</button>`}
-                    </div>
-                </div>
-            `;
-        }
-
-        // --- TAB 3: TRUCK STATUS (KHOANH ĐỎ) ---
+        // --- TAB 3: TRUCK ---
         function renderTruck(container) {
-            container.innerHTML = `
-                <div class="bg-white rounded-[2rem] shadow-sm overflow-hidden">
-                    <div class="overflow-x-auto"><table class="w-full text-left text-[10px]">
-                        <thead class="bg-gray-50 text-gray-400 font-bold uppercase tracking-tighter">
-                            <tr>
-                                <th class="p-3">Trạm</th>
-                                ${ITEMS.map(it => {
-                                    // Sửa lỗi hiển thị tên loại quà: Thay khoảng trắng bằng <br> để hiện đủ tên
-                                    return `<th class="p-3 text-center truck-header-cell">${it.replace(' ', '<br>')}</th>`;
-                                }).join('')}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${STATIONS.map(st => `
-                                <tr class="border-t border-gray-50"><td class="p-3 font-extrabold text-gray-700 whitespace-nowrap">${st.split('. ')[1]}</td>
-                                    ${ITEMS.map(it => {
-                                        const status = state.truck.find(t => t.Station === st && t.Item === it);
-                                        let s = status?.Status || 0;
-                                        let color = 'bg-gray-100 text-gray-300';
-                                        let lbl = 'WAIT';
-                                        // Fix lỗi hiển thị thời gian: Nếu data là string thì lấy HH:mm
-                                        let timeStr = (status?.Time && status.Time.includes(':')) ? status.Time.substring(0,5) : '--:--';
-                                        if(s == 1) { color = 'bg-yellow-400 text-white shadow-lg'; lbl = `IN\n${timeStr}`; }
-                                        if(s == 2) { color = 'bg-green-500 text-white shadow-lg'; lbl = `OUT\n${timeStr}`; }
-                                        return `<td class="p-1 text-center"><button onclick="handleTruck('${st}', '${it}')" class="w-10 h-10 rounded-lg font-black flex flex-col items-center justify-center leading-none text-[8px] btn-3d mx-auto ${color}">${lbl.replace('\n', '<br>')}</button></td>`;
-                                    }).join('')}
-                                </tr>`).join('')}
-                        </tbody></table></div>
-                </div>
-            `;
+            container.innerHTML = `<div class="bg-white rounded-[2rem] shadow-sm ring-1 ring-gray-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left text-[10px]">
+                <thead class="bg-gray-50 text-gray-400 font-bold uppercase tracking-tighter"><tr><th class="p-3">Trạm</th>${ITEMS.map(it => `<th class="p-3 text-center whitespace-nowrap">${it.replace(' ', '<br>')}</th>`).join('')}</tr></thead>
+                <tbody>${STATIONS.map(st => `<tr class="border-t border-gray-50"><td class="p-3 font-extrabold text-gray-700 whitespace-nowrap">${st.split('. ')[1]}</td>${ITEMS.map(it => {
+                    const status = state.truck.find(t => t.Station === st && t.Item === it);
+                    let s = status?.Status || 0;
+                    let color = 'bg-gray-100 text-gray-300';
+                    let lbl = 'WAIT';
+                    let timeStr = (status?.Time && status.Time.includes(':')) ? status.Time.substring(0,5) : '--:--';
+                    if(s == 1) { color = 'bg-yellow-400 text-white shadow-lg'; lbl = `IN\n${timeStr}`; }
+                    if(s == 2) { color = 'bg-green-500 text-white shadow-lg'; lbl = `OUT\n${timeStr}`; }
+                    return `<td class="p-1 text-center"><button onclick="handleTruck('${st}', '${it}')" class="w-10 h-10 rounded-lg font-black flex flex-col items-center justify-center leading-none text-[8px] btn-3d mx-auto ${color}">${lbl.replace('\n', '<br>')}</button></td>`;
+                }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
         }
 
-        // --- TAB 4: THỐNG KÊ ---
+        // --- TAB 4: THỐNG KÊ (FIX LỖI TẠI ĐÂY) ---
         function renderStats(container) {
             let totalP = 0, totalA = 0;
-            state.departments.forEach(d => { for(let i=1; i<=6; i++) { totalP += (Number(d[`Item${i}_P`]) || 0); totalA += (Number(d[`Item${i}_A`]) || 0); } });
+            state.departments.forEach(d => {
+                const stats = getDeptStats(d);
+                totalP += stats.totalPlan;
+                totalA += stats.totalActual;
+            });
+
             container.innerHTML = `
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-white p-5 rounded-[2rem] shadow-sm text-center"><p class="text-[9px] font-bold text-gray-400 uppercase">Tổng Plan</p><h2 class="text-2xl font-black">${totalP}</h2></div>
+                    <div class="bg-white p-5 rounded-[2rem] shadow-sm ring-1 ring-gray-100 text-center"><p class="text-[9px] font-bold text-gray-400 uppercase">Tổng Plan</p><h2 class="text-2xl font-black">${totalP}</h2></div>
                     <div class="bg-red-600 p-5 rounded-[2rem] shadow-xl text-center text-white"><p class="text-[9px] font-bold text-red-100 uppercase">Đã phát</p><h2 class="text-2xl font-black">${totalA}</h2></div>
                 </div>
-                <div class="bg-white rounded-[2rem] p-6 shadow-sm space-y-4">
-                    <h3 class="font-extrabold text-gray-800 flex items-center gap-2 text-gray-700"><i data-lucide="bar-chart-3" class="w-5 h-5 text-red-500"></i> Tiến độ Trạm</h3>
+                <div class="bg-white rounded-[2rem] p-6 shadow-sm ring-1 ring-gray-100 space-y-4">
+                    <h3 class="font-extrabold text-gray-800 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-5 h-5 text-red-500"></i> Tiến độ Trạm</h3>
                     ${STATIONS.map(st => {
                         const depts = state.departments.filter(d => String(d.Station).trim() === st.trim());
-                        const doneCount = depts.filter(d => getDeptProgress(d).isAllDone).length;
-                        const pct = depts.length ? Math.round((doneCount/depts.length)*100) : 0;
+                        // Đếm số BP XONG dựa trên hàm getDeptStats đồng nhất
+                        const doneCount = depts.filter(d => getDeptStats(d).isAllDone).length;
+                        const pct = depts.length ? Math.round((doneCount / depts.length) * 100) : 0;
+                        const isOpen = state.drillDownStation === st;
+                        
                         return `
                             <div class="space-y-2">
-                                <button onclick="toggleDrillDown('${st}')" class="w-full flex justify-between items-center"><span class="text-xs font-bold text-gray-600">${st}</span><span class="text-[10px] font-black ${pct === 100 ? 'text-green-600' : 'text-red-500'}">${doneCount}/${depts.length} BP XONG</span></button>
-                                <div class="w-full h-1 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-red-500 transition-all duration-700" style="width: ${pct}%"></div></div>
-                                ${state.drillDownStation === st ? `<div class="bg-gray-50 rounded-xl p-2 mt-2 grid gap-1 text-gray-800">
-                                    ${depts.map(d => {
-                                        const prog = getDeptProgress(d);
-                                        // Sửa hiển thị drop-down: Hiện Actual Qty / Plan Qty
-                                        return `<div class="flex justify-between text-[9px] font-bold p-2 bg-white rounded-lg"><span class="${prog.isAllDone ? 'text-green-600' : 'text-gray-500'}">${d.Dept}</span><span>${prog.totalA}/${prog.totalP} QUÀ</span></div>`;
-                                    }).join('')}
-                                </div>` : ''}
+                                <button onclick="state.drillDownStation = (state.drillDownStation === '${st}' ? null : '${st}'); render();" class="w-full flex justify-between items-center">
+                                    <span class="text-xs font-bold text-gray-600">${st}</span>
+                                    <span class="text-[10px] font-black ${pct === 100 ? 'text-green-600' : 'text-red-500'}">${doneCount}/${depts.length} BP XONG</span>
+                                </button>
+                                <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-red-500 transition-all duration-700" style="width: ${pct}%"></div>
+                                </div>
+                                ${isOpen ? `
+                                    <div class="bg-gray-50 rounded-xl p-2 mt-2 grid gap-1">
+                                        ${depts.map(d => {
+                                            const stats = getDeptStats(d);
+                                            return `
+                                                <div class="flex justify-between text-[9px] font-bold p-2 bg-white rounded-lg shadow-sm">
+                                                    <span class="${stats.isAllDone ? 'text-green-600' : 'text-gray-500'}">${d.Dept}</span>
+                                                    <span>${stats.totalActual}/${stats.totalPlan} QUÀ</span>
+                                                </div>`;
+                                        }).join('')}
+                                    </div>` : ''}
                             </div>`;
                     }).join('')}
-                </div>
-            `;
+                </div>`;
         }
 
-        // HÀM XỬ LÝ POP-UP XÁC NHẬN CHI TIẾT
         async function confirmGift(deptName, idx, val) {
             const dept = state.departments.find(d => d.Dept === deptName);
             const res = await Swal.fire({
@@ -255,49 +266,26 @@
                     <div class="flex justify-between"><span class="text-slate-400 font-semibold uppercase">Món quà:</span> <span class="font-bold text-red-600">${ITEMS[idx]}</span></div>
                     <div class="flex justify-between pt-1 border-t"><span class="text-slate-400 font-semibold uppercase">Số lượng:</span> <span class="font-black text-lg text-slate-900">${val} cái</span></div>
                 </div>`,
-                icon: 'question', showCancelButton: true, confirmButtonColor: '#e11d48', confirmButtonText: 'Đã giao xong', cancelButtonText: 'Quay lại'
+                icon: 'question', showCancelButton: true, confirmButtonColor: '#e11d48', confirmButtonText: 'Đã giao xong'
             });
             if (!res.isConfirmed) return;
             dept[`Item${idx+1}_A`] = val; render();
             fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'UPDATE_GIFT', data: { dept: deptName, itemIdx: idx, value: val } }) });
         }
 
-        function toggleDept(name, isOpen) { if(isOpen) state.expandedDepts.add(name); else state.expandedDepts.delete(name); }
-        function toggleDrillDown(st) { state.drillDownStation = (state.drillDownStation === st) ? null : st; render(); }
-
         async function handleTruck(st, it) {
             const cur = state.truck.find(t => t.Station === st && t.Item === it);
-            
-            // NẾU ĐÃ LÀ STATUS 2 (OUT) THÌ KHÔNG CHO NHẤN NỮA (KHÓA DỮ LIỆU)
-            if (cur && cur.Status == 2) {
-                return; // Thoát hàm, không làm gì cả
-            }
-        
-            // Logic chuyển đổi: 0 (WAIT) -> 1 (IN) -> 2 (OUT)
-            let nextS = (!cur || cur.Status == 0) ? 1 : 2;
-        
+            let nextS = (!cur || cur.Status == 0) ? 1 : (cur.Status == 1 ? 2 : 0);
+            if(nextS === 0 && cur?.Status === 2) return; // Khóa khi đã OUT
             const now = new Date();
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            
-            // Cập nhật giao diện (Optimistic UI)
-            if(!cur) {
-                state.truck.push({ Station: st, Item: it, Status: nextS, Time: timeStr });
-            } else {
-                cur.Status = nextS;
-                cur.Time = timeStr;
-            }
+            if(!cur) state.truck.push({ Station: st, Item: it, Status: nextS, Time: timeStr }); else { cur.Status = nextS; cur.Time = timeStr; }
             render();
-        
-            // Gửi dữ liệu xuống Sheet
-            fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'UPDATE_TRUCK', data: { station: st, item: it, status: nextS, time: timeStr } })
-            });
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'UPDATE_TRUCK', data: { station: st, item: it, status: nextS, time: timeStr } }) });
         }
 
-        // Tab Total (Vẫn giữ để app hoạt động đầy đủ)
         function renderTotal(container) {
-            container.innerHTML = `<div class="space-y-4"><select onchange="state.selectedStation = this.value; render();" class="w-full p-4 rounded-2xl glass-card font-bold border-none bg-white"><option value="">-- Chọn Trạm --</option>${STATIONS.map(s => `<option value="${s}" ${state.selectedStation === s ? 'selected' : ''}>${s}</option>`).join('')}</select>${state.selectedStation ? `<div class="bg-white rounded-[2rem] p-5 shadow-sm space-y-4"><h3 class="font-extrabold text-gray-800 flex items-center gap-2 text-gray-700"><i data-lucide="package-check" class="w-5 h-5 text-red-500"></i> Tổng hàng trạm</h3><div class="grid gap-3">${ITEMS.map((name, i) => { const stDepts = state.departments.filter(d => String(d.Station).trim() === state.selectedStation.trim()); const totalP = stDepts.reduce((acc, d) => acc + (Number(d[`Item${i+1}_P`]) || 0), 0); const pk = { boxes: Math.floor(totalP/PACKAGING[i]), rem: totalP%PACKAGING[i] }; return `<div class="p-4 rounded-2xl bg-slate-50 ring-1 ring-gray-100"><div class="flex justify-between items-center mb-2"><span class="text-sm font-black text-gray-700">${name}</span><span class="text-sm font-black text-red-600">${totalP}</span></div><div class="flex gap-4"><div class="flex-1 bg-white p-2 rounded-xl text-center"><p class="text-[9px] font-bold text-gray-400 uppercase">Thùng</p><p class="text-lg font-black">${pk.boxes}</p></div><div class="flex-1 bg-white p-2 rounded-xl text-center"><p class="text-[9px] font-bold text-gray-400 uppercase">Lẻ</p><p class="text-lg font-black">${pk.rem}</p></div></div></div>`; }).join('')}</div></div>` : ''}</div>`;
+            container.innerHTML = `<div class="space-y-4"><select onchange="state.selectedStation = this.value; render();" class="w-full p-4 rounded-2xl glass-card font-bold border-none bg-white"><option value="">-- Chọn Trạm --</option>${STATIONS.map(s => `<option value="${s}" ${state.selectedStation === s ? 'selected' : ''}>${s}</option>`).join('')}</select>${state.selectedStation ? `<div class="bg-white rounded-[2rem] p-5 shadow-sm space-y-4"><h3 class="font-extrabold text-gray-800 flex items-center gap-2"><i data-lucide="package-check" class="w-5 h-5 text-red-500"></i> Tổng hàng trạm</h3><div class="grid gap-3">${ITEMS.map((name, i) => { const stDepts = state.departments.filter(d => String(d.Station).trim() === state.selectedStation.trim()); const totalP = stDepts.reduce((acc, d) => acc + (Number(d[`Item${i+1}_P`]) || 0), 0); const totalA = stDepts.reduce((acc, d) => acc + (Number(d[`Item${i+1}_A`]) || 0), 0); const boxes = Math.floor(totalP/PACKAGING[i]); const rem = totalP%PACKAGING[i]; return `<div class="p-4 rounded-2xl bg-slate-50 ring-1 ring-gray-100"><div class="flex justify-between items-center mb-2"><span class="text-sm font-black text-gray-700">${name}</span><span class="text-sm font-black text-red-600">${totalA}/${totalP}</span></div><div class="flex gap-4"><div class="flex-1 bg-white p-2 rounded-xl text-center shadow-inner"><p class="text-[9px] font-bold text-gray-400 uppercase">Thùng</p><p class="text-lg font-black">${boxes}</p></div><div class="flex-1 bg-white p-2 rounded-xl text-center shadow-inner"><p class="text-[9px] font-bold text-gray-400 uppercase">Lẻ</p><p class="text-lg font-black">${rem}</p></div></div></div>`; }).join('')}</div></div>` : ''}</div>`;
         }
     </script>
 </body>
