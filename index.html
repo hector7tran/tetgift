@@ -267,12 +267,32 @@
 
         async function handleTruck(st, it) {
             const cur = state.truck.find(t => t.Station === st && t.Item === it);
-            let nextS = (!cur || cur.Status == 0) ? 1 : (cur.Status == 1 ? 2 : 0);
+            
+            // NẾU ĐÃ LÀ STATUS 2 (OUT) THÌ KHÔNG CHO NHẤN NỮA (KHÓA DỮ LIỆU)
+            if (cur && cur.Status == 2) {
+                return; // Thoát hàm, không làm gì cả
+            }
+        
+            // Logic chuyển đổi: 0 (WAIT) -> 1 (IN) -> 2 (OUT)
+            let nextS = (!cur || cur.Status == 0) ? 1 : 2;
+        
             const now = new Date();
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            if(!cur) state.truck.push({ Station: st, Item: it, Status: nextS, Time: timeStr }); else { cur.Status = nextS; cur.Time = timeStr; }
+            
+            // Cập nhật giao diện (Optimistic UI)
+            if(!cur) {
+                state.truck.push({ Station: st, Item: it, Status: nextS, Time: timeStr });
+            } else {
+                cur.Status = nextS;
+                cur.Time = timeStr;
+            }
             render();
-            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'UPDATE_TRUCK', data: { station: st, item: it, status: nextS, time: timeStr } }) });
+        
+            // Gửi dữ liệu xuống Sheet
+            fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'UPDATE_TRUCK', data: { station: st, item: it, status: nextS, time: timeStr } })
+            });
         }
 
         // Tab Total (Vẫn giữ để app hoạt động đầy đủ)
